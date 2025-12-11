@@ -95,7 +95,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (value) {
                 themeProvider.toggleTheme();
               },
-              activeColor: AppTheme.primaryGreen,
+              activeThumbColor: AppTheme.primaryGreen,
+              activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.4),
             ),
           ),
           const Divider(),

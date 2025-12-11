@@ -2,10 +2,39 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import '../firebase_options.dart';
 
 /// Comprehensive Firebase Storage service for handling file uploads and downloads
 class StorageService {
-  static final FirebaseStorage _storage = FirebaseStorage.instance;
+  // Use default instance first, fallback to explicit bucket if needed
+  static FirebaseStorage get _storage {
+    try {
+      // Try default instance first (uses bucket from google-services.json)
+      return FirebaseStorage.instance;
+    } catch (e) {
+      // Fallback to explicit bucket configuration
+      if (kDebugMode) {
+        print('[StorageService] Using explicit bucket configuration');
+      }
+      return FirebaseStorage.instanceFor(
+        bucket: DefaultFirebaseOptions.currentPlatform.storageBucket,
+      );
+    }
+  }
+
+  static void _logDebug(String message) {
+    if (kDebugMode) {
+      print('[StorageService] $message');
+    }
+  }
+
+  static void _logError(String message, [dynamic error, StackTrace? stackTrace]) {
+    if (kDebugMode) {
+      print('[StorageService] ERROR: $message');
+      if (error != null) print('[StorageService] Error details: $error');
+      if (stackTrace != null) print('[StorageService] StackTrace: $stackTrace');
+    }
+  }
 
   // Storage references
   static Reference get _profileImages => _storage.ref().child('profile_images');
@@ -105,25 +134,22 @@ class StorageService {
     required String messageId,
     required XFile imageFile,
   }) async {
-    try {
-      final fileName = '${chatId}_${messageId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _chatImages.child(fileName);
-      
-      final uploadTask = ref.putFile(File(imageFile.path));
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      
-      if (kDebugMode) {
-        print('Chat image uploaded: $downloadUrl');
-      }
-      
-      return downloadUrl;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error uploading chat image: $e');
-      }
-      rethrow;
-    }
+    _logDebug('uploadChatImage called');
+    _logDebug('chatId: $chatId, messageId: $messageId');
+    _logDebug('Image file path: ${imageFile.path}');
+    _logDebug('Image file name: ${imageFile.name}');
+    
+    return _uploadWithRetry(
+      pathBuilder: () {
+        // Match storage rules: /chat_images/{chatId}/{messageId}
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final ref = _chatImages.child(chatId).child(messageId).child(fileName);
+        _logDebug('Built image reference: ${ref.fullPath}');
+        return ref;
+      },
+      file: File(imageFile.path),
+      metadata: SettableMetadata(contentType: 'image/jpeg'),
+    );
   }
 
   /// Upload chat video
@@ -132,25 +158,21 @@ class StorageService {
     required String messageId,
     required XFile videoFile,
   }) async {
-    try {
-      final fileName = '${chatId}_${messageId}_${DateTime.now().millisecondsSinceEpoch}.mp4';
-      final ref = _chatVideos.child(fileName);
-      
-      final uploadTask = ref.putFile(File(videoFile.path));
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      
-      if (kDebugMode) {
-        print('Chat video uploaded: $downloadUrl');
-      }
-      
-      return downloadUrl;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error uploading chat video: $e');
-      }
-      rethrow;
-    }
+    _logDebug('uploadChatVideo called');
+    _logDebug('chatId: $chatId, messageId: $messageId');
+    _logDebug('Video file path: ${videoFile.path}');
+    
+    // Match storage rules: /chat_videos/{chatId}/{messageId}
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.mp4';
+    return _uploadWithRetry(
+      pathBuilder: () {
+        final ref = _chatVideos.child(chatId).child(messageId).child(fileName);
+        _logDebug('Built video reference: ${ref.fullPath}');
+        return ref;
+      },
+      file: File(videoFile.path),
+      metadata: SettableMetadata(contentType: 'video/mp4'),
+    );
   }
 
   /// Upload chat document
@@ -160,26 +182,23 @@ class StorageService {
     required File documentFile,
     required String fileName,
   }) async {
-    try {
-      final fileExtension = fileName.split('.').last;
-      final newFileName = '${chatId}_${messageId}_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
-      final ref = _chatDocuments.child(newFileName);
-      
-      final uploadTask = ref.putFile(documentFile);
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      
-      if (kDebugMode) {
-        print('Chat document uploaded: $downloadUrl');
-      }
-      
-      return downloadUrl;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error uploading chat document: $e');
-      }
-      rethrow;
-    }
+    _logDebug('uploadChatDocument called');
+    _logDebug('chatId: $chatId, messageId: $messageId');
+    _logDebug('Document file path: ${documentFile.path}');
+    _logDebug('Document file name: $fileName');
+    
+    final fileExtension = fileName.split('.').last;
+    // Match storage rules: /chat_documents/{chatId}/{messageId}
+    final docFileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+    return _uploadWithRetry(
+      pathBuilder: () {
+        final ref = _chatDocuments.child(chatId).child(messageId).child(docFileName);
+        _logDebug('Built document reference: ${ref.fullPath}');
+        return ref;
+      },
+      file: documentFile,
+      metadata: SettableMetadata(contentType: 'application/octet-stream'),
+    );
   }
 
   /// Upload audio message
@@ -188,23 +207,118 @@ class StorageService {
     required String messageId,
     required File audioFile,
   }) async {
+    _logDebug('uploadAudioMessage called');
+    _logDebug('chatId: $chatId, messageId: $messageId');
+    _logDebug('Audio file path: ${audioFile.path}');
+    
+    // Match storage rules: /chat_audio/{chatId}/{messageId}
+    final audioFileName = '${DateTime.now().millisecondsSinceEpoch}.m4a';
+    return _uploadWithRetry(
+      pathBuilder: () {
+        final ref = _chatAudio.child(chatId).child(messageId).child(audioFileName);
+        _logDebug('Built audio reference: ${ref.fullPath}');
+        return ref;
+      },
+      file: audioFile,
+      metadata: SettableMetadata(contentType: 'audio/mp4'),
+    );
+  }
+
+  // ===== Common upload with one retry to handle stale resumable sessions =====
+  static Future<String> _uploadWithRetry({
+    required Reference Function() pathBuilder,
+    required File file,
+    required SettableMetadata metadata,
+  }) async {
+    // Get actual bucket from storage instance
+    final bucket = _storage.app.options.storageBucket ?? DefaultFirebaseOptions.currentPlatform.storageBucket;
+    _logDebug('=== Starting upload ===');
+    _logDebug('Storage bucket: $bucket');
+    _logDebug('Storage app name: ${_storage.app.name}');
+    _logDebug('File path: ${file.path}');
+    _logDebug('File exists: ${await file.exists()}');
+    if (await file.exists()) {
+      final fileSize = await file.length();
+      _logDebug('File size: $fileSize bytes');
+      if (fileSize == 0) {
+        _logError('File is empty!');
+        throw Exception('Cannot upload empty file');
+      }
+    } else {
+      _logError('File does not exist at path: ${file.path}');
+      throw Exception('File not found: ${file.path}');
+    }
+    _logDebug('Content type: ${metadata.contentType}');
+
+    Future<String> _attempt(int attemptNumber) async {
+      final ref = pathBuilder();
+      final fullPath = ref.fullPath;
+      _logDebug('Attempt $attemptNumber: Uploading to path: $fullPath');
+      _logDebug('Full storage URL: gs://$bucket/$fullPath');
+      
+      try {
+        // First try putFile (more efficient for large files)
+        _logDebug('Attempt $attemptNumber: Trying putFile...');
+        final uploadTask = ref.putFile(file, metadata);
+        
+        // Listen to upload progress
+        uploadTask.snapshotEvents.listen((snapshot) {
+          final progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          _logDebug('Upload progress: ${progress.toStringAsFixed(1)}%');
+        });
+        
+        final snapshot = await uploadTask;
+        _logDebug('Upload completed successfully');
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        _logDebug('Download URL: $downloadUrl');
+        return downloadUrl;
+      } on FirebaseException catch (e) {
+        _logError('putFile failed on attempt $attemptNumber', e);
+        _logDebug('Attempt $attemptNumber: Falling back to putData...');
+        
+        // Fallback: read bytes and upload with putData (helps when file paths are not directly readable)
+        try {
+          final bytes = await file.readAsBytes();
+          _logDebug('Read ${bytes.length} bytes from file');
+          final uploadTask = ref.putData(bytes, metadata);
+          
+          uploadTask.snapshotEvents.listen((snapshot) {
+            final progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            _logDebug('Upload progress (putData): ${progress.toStringAsFixed(1)}%');
+          });
+          
+          final snapshot = await uploadTask;
+          _logDebug('putData upload completed successfully');
+          final downloadUrl = await snapshot.ref.getDownloadURL();
+          _logDebug('Download URL: $downloadUrl');
+          return downloadUrl;
+        } catch (e2) {
+          _logError('putData also failed on attempt $attemptNumber', e2);
+          rethrow;
+        }
+      } catch (e) {
+        _logError('Unexpected error on attempt $attemptNumber', e);
+        rethrow;
+      }
+    }
+
     try {
-      final fileName = '${chatId}_${messageId}_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      final ref = _chatAudio.child(fileName);
+      return await _attempt(1);
+    } on FirebaseException catch (e) {
+      final code = e.code;
+      final message = e.message ?? 'No message';
+      _logError('Upload failed with code: $code', e);
+      _logDebug('Error message: $message');
       
-      final uploadTask = ref.putFile(audioFile);
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      
-      if (kDebugMode) {
-        print('Audio message uploaded: $downloadUrl');
+      // Retry once on object-not-found / canceled resumable session
+      if (code == 'object-not-found' || code == 'canceled' || code == '-13010' || code == '-13040') {
+        _logDebug('Retrying upload after error code: $code');
+        await Future.delayed(const Duration(seconds: 1));
+        return await _attempt(2);
       }
-      
-      return downloadUrl;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error uploading audio message: $e');
-      }
+      rethrow;
+    } catch (e, stackTrace) {
+      _logError('Fatal upload error', e, stackTrace);
       rethrow;
     }
   }

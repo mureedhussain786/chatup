@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,9 +13,12 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 3), () {
+      Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed('/login');
+        final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+        Navigator.of(context).pushReplacementNamed(
+          isLoggedIn ? '/home' : '/login-options',
+        );
       });
     });
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/app_input.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({super.key});
@@ -42,9 +43,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       authProvider.clearError(); // Error dikhane ke baad usay clear karein
     }
 
-    // NOTE: Successful login par navigation 'AuthGate' khud handle kar lega.
-    // Jab user verify ho jayega, authStateChanges stream event bhejega
-    // aur AuthGate user ko home screen par bhej dega.
+    // Successful login par hum '/home' route pe jump kar denge.
   }
 
   /// OTP verify karne ke liye function
@@ -52,7 +51,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final otpCode = _otpController.text.trim();
-      authProvider.verifyOTP(otpCode);
+      authProvider.verifyOTP(otpCode).then((success) {
+        if (!mounted) return;
+        if (success) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
+      });
     }
   }
 
@@ -99,7 +103,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -112,18 +116,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      AppInput(
                         controller: _otpController,
                         keyboardType: TextInputType.number,
                         maxLength: 6,
-                        textAlign: TextAlign.center, // OTP center mein behtar lagta hai
-                        style: const TextStyle(fontSize: 20, letterSpacing: 8), // Spacing for OTP
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '123456',
-                          counterText: '',
-                          labelText: 'OTP Code',
-                        ),
+                        textAlign: TextAlign.center,
+                        label: 'OTP Code',
+                        hint: '123456',
+                        onChanged: (_) {},
                         validator: (value) {
                           if (value == null || value.length < 6) {
                             return 'Please enter a valid 6-digit OTP';

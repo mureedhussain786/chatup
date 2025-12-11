@@ -142,7 +142,7 @@ class _ChatProfileScreenState extends State<ChatProfileScreen> {
                   _buildActionTile(
                     _isBlocked ? Icons.block : Icons.block_outlined,
                     _isBlocked ? 'Unblock' : 'Block',
-                    '${widget.contact.name}',
+                  widget.contact.name,
                     _toggleBlock,
                     color: Colors.red,
                   ),
@@ -155,7 +155,7 @@ class _ChatProfileScreenState extends State<ChatProfileScreen> {
                   _buildActionTile(
                       Icons.report,
                       'Report',
-                      '${widget.contact.name}',
+                    widget.contact.name,
                           () => _showSnack('Contact reported', Colors.red),
                       color: Colors.red
                   ),

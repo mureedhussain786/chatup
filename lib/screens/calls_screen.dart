@@ -121,8 +121,8 @@ class CallsScreen extends StatelessWidget {
             ),
           );
         },
-        child: const Icon(Icons.add_call, color: Colors.white),
         tooltip: "Start a call",
+        child: const Icon(Icons.add_call, color: Colors.white),
       ),
     );
   }

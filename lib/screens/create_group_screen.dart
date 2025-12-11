@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'group_chat_screen.dart';
 import '../providers/theme_provider.dart';
 import '../theme.dart';
+import '../widgets/app_input.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   const CreateGroupScreen({super.key});
@@ -88,8 +89,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen>
         SnackBar(content: Text('Error picking image: $e')),
       );
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoadingIcon = false);
+      if (mounted) {
+        setState(() => _isLoadingIcon = false);
+      }
     }
   }
 
@@ -175,23 +177,12 @@ class _CreateGroupScreenState extends State<CreateGroupScreen>
               ),
             ),
             const SizedBox(height: 16),
-            TextField(
+            AppInput(
               controller: _groupNameController,
-              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                labelText: 'Group Name',
-                labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
-                hintText: 'Enter group name',
-                hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black54),
-                prefixIcon: Icon(Icons.edit, color: AppTheme.primaryGreen),
-                filled: true,
-                fillColor: isDarkMode ? Colors.grey[800] : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              textCapitalization: TextCapitalization.words,
+              label: 'Group Name',
+              hint: 'Enter group name',
+              prefixIcon: const Icon(Icons.edit, color: AppTheme.primaryGreen),
+              keyboardType: TextInputType.text,
               maxLength: 25,
             ),
             const SizedBox(height: 8),

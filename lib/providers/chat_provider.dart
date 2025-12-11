@@ -6,6 +6,7 @@ import '../models/message.dart'; // Message model ko import karein
 class ChatProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _currentChatId;
+  String? get currentChatId => _currentChatId;
 
   /// Firestore se tamam users ki live stream hasil karein (maujooda user ke ilawa)
   Stream<List<UserModel>> getUsersStream(String? currentUserId) {

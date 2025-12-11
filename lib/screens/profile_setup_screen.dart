@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
 import '../services/storage_service.dart';
+import '../widgets/app_input.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -89,6 +90,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 : statusController.text.trim(),
           );
 
+          if (!mounted) return;
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -107,9 +109,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           );
         }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -225,34 +229,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       const SizedBox(height: 20),
 
                       // Name Field
-                      TextFormField(
+                      AppInput(
                         controller: nameController,
+                        label: 'Your Name',
+                        hint: 'Enter your full name',
+                        prefixIcon: const Icon(Icons.person),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter your name';
                           }
                           return null;
                         },
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Your Name',
-                          hintText: 'Enter your full name',
-                          prefixIcon: Icon(Icons.person),
-                        ),
                       ),
 
                       const SizedBox(height: 16),
 
                       // Status Field
-                      TextFormField(
+                      AppInput(
                         controller: statusController,
+                        label: 'Status (Optional)',
+                        hint: 'Hey there! I am using ChatUp',
                         maxLines: 2,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Status (Optional)',
-                          hintText: 'Hey there! I am using ChatUp',
-                          prefixIcon: Icon(Icons.message),
-                        ),
+                        prefixIcon: const Icon(Icons.message),
                       ),
 
                       const SizedBox(height: 20),

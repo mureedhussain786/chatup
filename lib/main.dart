@@ -1,7 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 // Your local imports
 import 'firebase_options.dart';
@@ -13,6 +13,9 @@ import 'screens/splash_screen.dart';
 import 'screens/chatup_home.dart';
 import 'screens/phone_login_screen.dart';
 import 'screens/otp_verification_screen.dart';
+import 'screens/login_options_screen.dart';
+import 'screens/email_login_screen.dart';
+import 'screens/register_screen.dart';
 
 /// ===============================
 /// ENTRY POINT
@@ -22,6 +25,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Debug: Log Firebase Storage configuration
+  if (kDebugMode) {
+    final options = DefaultFirebaseOptions.currentPlatform;
+    print('[Main] Firebase initialized');
+    print('[Main] Project ID: ${options.projectId}');
+    print('[Main] Storage Bucket: ${options.storageBucket}');
+    print('[Main] Auth Domain: ${options.authDomain}');
+  }
+
   runApp(const ChatUpApp());
 }
 
@@ -47,47 +60,19 @@ class ChatUpApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
-
-            // AuthGate will check login state
-            home: const AuthGate(),
-
-            // Define routes for navigation
+            initialRoute: '/splash',
             routes: {
-              '/login': (_) => const PhoneLoginScreen(),
+              '/splash': (_) => const SplashScreen(),
+              '/login-options': (_) => const LoginOptionsScreen(),
+              '/login-email': (_) => const EmailLoginScreen(),
+              '/register': (_) => const RegisterScreen(),
+              '/login-phone': (_) => const PhoneLoginScreen(),
               '/verify': (_) => const OTPVerificationScreen(),
               '/home': (_) => const WhatsAppHome(),
             },
           );
         },
       ),
-    );
-  }
-}
-
-/// ===============================
-/// AUTH GATE (Check User Status)
-/// ===============================
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        // 1️⃣ While Firebase checks the auth state, show splash
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen();
-        }
-
-        // 2️⃣ If user is logged in → Go to Home
-        if (snapshot.hasData) {
-          return const WhatsAppHome();
-        }
-
-        // 3️⃣ If user not logged in → Show Login screen
-        return const PhoneLoginScreen();
-      },
     );
   }
 }

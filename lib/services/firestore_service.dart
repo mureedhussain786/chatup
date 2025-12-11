@@ -3,9 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../models/message.dart';
 import '../models/chat.dart';
 import '../models/user_model.dart';
-import '../models/contact_model.dart';
-import '../models/group_model.dart';
-import '../models/status_model.dart';
 
 /// Comprehensive Firestore service for real-time data management
 class FirestoreService {
@@ -18,10 +15,6 @@ class FirestoreService {
   // Note: For a scalable chat app, messages should be a sub-collection inside each chat.
   // This example uses a simplified approach for demonstration. A better structure is chats/{chatId}/messages.
   // We will follow this improved structure in the methods.
-
-  static CollectionReference get _groups => _firestore.collection('groups');
-  static CollectionReference get _statuses => _firestore.collection('statuses');
-  static CollectionReference get _contacts => _firestore.collection('contacts');
 
   // ==================== USER MANAGEMENT ====================
 

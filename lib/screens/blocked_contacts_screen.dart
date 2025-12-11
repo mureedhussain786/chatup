@@ -5,7 +5,7 @@ class BlockedContactsScreen extends StatefulWidget {
   const BlockedContactsScreen({super.key});
 
   @override
-  _BlockedContactsScreenState createState() => _BlockedContactsScreenState();
+  State<BlockedContactsScreen> createState() => _BlockedContactsScreenState();
 }
 
 class _BlockedContactsScreenState extends State<BlockedContactsScreen> {
@@ -296,8 +296,8 @@ class _BlockedContactsScreenState extends State<BlockedContactsScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showBlockContactDialog,
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white),
         tooltip: "Block a contact",
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

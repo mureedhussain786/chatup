@@ -405,7 +405,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.05),
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.2 : 0.05),
               blurRadius: 4,
               offset: const Offset(2, 2),
             )

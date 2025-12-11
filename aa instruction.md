@@ -1,0 +1,1 @@
+and see the strucure of te folders and files dont write the code twice try to use the old one and  seperet the services in teh @services  and the @/widget @/provider and model an screen sperate folder 

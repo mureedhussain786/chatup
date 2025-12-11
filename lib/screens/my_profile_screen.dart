@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -130,7 +128,7 @@ class _MyProfileScreenState extends State<MyProfileScreen>
                         child: CircleAvatar(
                           radius: 70,
                           backgroundImage: avatar,
-                          backgroundColor: Colors.white.withOpacity(0.3),
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
                           child: avatar == null
                               ? const Icon(Icons.person,
                               size: 70, color: Colors.white)
