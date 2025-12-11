@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
-// Your local imports
-import 'firebase_options.dart';
-import 'theme.dart';
+// Import your providers and screens
+import 'firebase_options.dart'; // Auto-generated file
+import 'providers/auth_provider.dart'
+    as local_auth; // Alias to avoid conflict with Firebase Auth
 import 'providers/theme_provider.dart';
+import 'theme.dart';
+
+// 1. IMPORT YOUR CHAT PROVIDER HERE (Check the file path)
 import 'providers/chat_provider.dart';
 import 'providers/auth_provider.dart' as auth_provider;
 import 'screens/splash_screen.dart';
@@ -38,25 +42,24 @@ void main() async {
   runApp(const ChatUpApp());
 }
 
-/// ===============================
-/// MAIN APP WIDGET
-/// ===============================
-class ChatUpApp extends StatelessWidget {
-  const ChatUpApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => auth_provider.AuthProvider()),
+
+        // 2. ADD THIS LINE HERE:
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'ChatUp',
             debugShowCheckedModeBanner: false,
+            title: 'ChatUp',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
