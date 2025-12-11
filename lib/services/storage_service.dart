@@ -1,25 +1,49 @@
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:math';
 import '../firebase_options.dart';
 
 /// Comprehensive Firebase Storage service for handling file uploads and downloads
 class StorageService {
-  // Use default instance first, fallback to explicit bucket if needed
+  static final Random _random = Random();
+  
+  // Use explicit bucket configuration to ensure consistency
   static FirebaseStorage get _storage {
     try {
-      // Try default instance first (uses bucket from google-services.json)
-      return FirebaseStorage.instance;
-    } catch (e) {
-      // Fallback to explicit bucket configuration
+      final bucket = DefaultFirebaseOptions.currentPlatform.storageBucket;
       if (kDebugMode) {
-        print('[StorageService] Using explicit bucket configuration');
+        print('[StorageService] Configuring storage with bucket: $bucket');
       }
-      return FirebaseStorage.instanceFor(
-        bucket: DefaultFirebaseOptions.currentPlatform.storageBucket,
+      // Use instanceFor with explicit bucket to avoid configuration issues
+      final app = Firebase.app();
+      final storage = FirebaseStorage.instanceFor(
+        app: app,
+        bucket: bucket,
       );
+      if (kDebugMode) {
+        print('[StorageService] Storage instance created successfully');
+        print('[StorageService] App name: ${app.name}');
+        print('[StorageService] Storage bucket: ${storage.app.options.storageBucket ?? bucket}');
+      }
+      return storage;
+    } catch (e) {
+      if (kDebugMode) {
+        print('[StorageService] Error creating storage instance: $e');
+        print('[StorageService] Falling back to default instance');
+      }
+      // Fallback to default instance
+      return FirebaseStorage.instance;
     }
+  }
+  
+  // Helper to generate unique filename with random component
+  static String _generateUniqueFileName(String extension) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = _random.nextInt(10000);
+    return '${timestamp}_$random.$extension';
   }
 
   static void _logDebug(String message) {
@@ -142,7 +166,7 @@ class StorageService {
     return _uploadWithRetry(
       pathBuilder: () {
         // Match storage rules: /chat_images/{chatId}/{messageId}
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final fileName = _generateUniqueFileName('jpg');
         final ref = _chatImages.child(chatId).child(messageId).child(fileName);
         _logDebug('Built image reference: ${ref.fullPath}');
         return ref;
@@ -163,9 +187,9 @@ class StorageService {
     _logDebug('Video file path: ${videoFile.path}');
     
     // Match storage rules: /chat_videos/{chatId}/{messageId}
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}.mp4';
     return _uploadWithRetry(
       pathBuilder: () {
+        final fileName = _generateUniqueFileName('mp4');
         final ref = _chatVideos.child(chatId).child(messageId).child(fileName);
         _logDebug('Built video reference: ${ref.fullPath}');
         return ref;
@@ -189,9 +213,9 @@ class StorageService {
     
     final fileExtension = fileName.split('.').last;
     // Match storage rules: /chat_documents/{chatId}/{messageId}
-    final docFileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
     return _uploadWithRetry(
       pathBuilder: () {
+        final docFileName = _generateUniqueFileName(fileExtension);
         final ref = _chatDocuments.child(chatId).child(messageId).child(docFileName);
         _logDebug('Built document reference: ${ref.fullPath}');
         return ref;
@@ -212,9 +236,9 @@ class StorageService {
     _logDebug('Audio file path: ${audioFile.path}');
     
     // Match storage rules: /chat_audio/{chatId}/{messageId}
-    final audioFileName = '${DateTime.now().millisecondsSinceEpoch}.m4a';
     return _uploadWithRetry(
       pathBuilder: () {
+        final audioFileName = _generateUniqueFileName('m4a');
         final ref = _chatAudio.child(chatId).child(messageId).child(audioFileName);
         _logDebug('Built audio reference: ${ref.fullPath}');
         return ref;
@@ -251,10 +275,18 @@ class StorageService {
     _logDebug('Content type: ${metadata.contentType}');
 
     Future<String> _attempt(int attemptNumber) async {
+      // Create a fresh reference on each attempt to avoid stale sessions
       final ref = pathBuilder();
       final fullPath = ref.fullPath;
       _logDebug('Attempt $attemptNumber: Uploading to path: $fullPath');
       _logDebug('Full storage URL: gs://$bucket/$fullPath');
+      _logDebug('Reference bucket: ${ref.bucket}');
+      _logDebug('Reference name: ${ref.name}');
+      
+      // Validate reference
+      if (fullPath.isEmpty) {
+        throw Exception('Invalid storage path: path is empty');
+      }
       
       try {
         // First try putFile (more efficient for large files)
@@ -311,10 +343,24 @@ class StorageService {
       _logDebug('Error message: $message');
       
       // Retry once on object-not-found / canceled resumable session
+      // These errors often indicate a stale resumable upload session or bucket access issue
       if (code == 'object-not-found' || code == 'canceled' || code == '-13010' || code == '-13040') {
         _logDebug('Retrying upload after error code: $code');
-        await Future.delayed(const Duration(seconds: 1));
-        return await _attempt(2);
+        _logDebug('Error message: $message');
+        _logDebug('Waiting 3 seconds before retry to ensure fresh session...');
+        await Future.delayed(const Duration(seconds: 3));
+        // pathBuilder will generate a new unique filename on retry
+        try {
+          return await _attempt(2);
+        } catch (retryError) {
+          _logError('Retry also failed', retryError);
+          // Provide more helpful error message
+          throw FirebaseException(
+            plugin: 'firebase_storage',
+            code: code,
+            message: 'Upload failed after retry. Please check: 1) Firebase Storage is enabled, 2) Storage rules allow uploads, 3) Network connection is stable. Original error: $message',
+          );
+        }
       }
       rethrow;
     } catch (e, stackTrace) {

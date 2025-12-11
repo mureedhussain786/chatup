@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '522675172773',
     projectId: 'chatup-1ec88',
     authDomain: 'chatup-1ec88.firebaseapp.com',
-    storageBucket: 'chatup-1ec88.appspot.com',
+    storageBucket: 'chatup-1ec88.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
     appId: '1:522675172773:android:a078bcb161cdcea3dda44c',
     messagingSenderId: '522675172773',
     projectId: 'chatup-1ec88',
-    storageBucket: 'chatup-1ec88.appspot.com',
+    storageBucket: 'chatup-1ec88.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,7 +13,6 @@ import 'theme.dart';
 
 // 1. IMPORT YOUR CHAT PROVIDER HERE (Check the file path)
 import 'providers/chat_provider.dart';
-import 'providers/auth_provider.dart' as auth_provider;
 import 'screens/splash_screen.dart';
 import 'screens/chatup_home.dart';
 import 'screens/phone_login_screen.dart';
@@ -26,20 +26,55 @@ import 'screens/register_screen.dart';
 /// ===============================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
-  // Debug: Log Firebase Storage configuration
   if (kDebugMode) {
-    final options = DefaultFirebaseOptions.currentPlatform;
-    print('[Main] Firebase initialized');
-    print('[Main] Project ID: ${options.projectId}');
-    print('[Main] Storage Bucket: ${options.storageBucket}');
-    print('[Main] Auth Domain: ${options.authDomain}');
+    print('[Main] Starting app initialization...');
   }
 
-  runApp(const ChatUpApp());
+  try {
+    if (kDebugMode) {
+      print('[Main] Initializing Firebase...');
+    }
+
+    // Add timeout to prevent hanging
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        if (kDebugMode) {
+          print('[Main] WARNING: Firebase initialization timed out');
+        }
+        throw TimeoutException('Firebase initialization timed out');
+      },
+    );
+
+    // Debug: Log Firebase Storage configuration
+    if (kDebugMode) {
+      final options = DefaultFirebaseOptions.currentPlatform;
+      print('[Main] Firebase initialized successfully');
+      print('[Main] Project ID: ${options.projectId}');
+      print('[Main] Storage Bucket: ${options.storageBucket}');
+      print('[Main] Auth Domain: ${options.authDomain}');
+    }
+  } catch (e, stackTrace) {
+    if (kDebugMode) {
+      print('[Main] ERROR: Firebase initialization failed');
+      print('[Main] Error: $e');
+      print('[Main] StackTrace: $stackTrace');
+    }
+    // Continue anyway - some Firebase features might still work
+  }
+
+  if (kDebugMode) {
+    print('[Main] Starting app...');
+  }
+
+  runApp(const MyApp());
+
+  if (kDebugMode) {
+    print('[Main] App started successfully');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -47,35 +82,78 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-
-        // 2. ADD THIS LINE HERE:
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-      ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'ChatUp',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-            initialRoute: '/splash',
-            routes: {
-              '/splash': (_) => const SplashScreen(),
-              '/login-options': (_) => const LoginOptionsScreen(),
-              '/login-email': (_) => const EmailLoginScreen(),
-              '/register': (_) => const RegisterScreen(),
-              '/login-phone': (_) => const PhoneLoginScreen(),
-              '/verify': (_) => const OTPVerificationScreen(),
-              '/home': (_) => const WhatsAppHome(),
-            },
-          );
-        },
-      ),
-    );
+    try {
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) {
+            try {
+              return local_auth.AuthProvider();
+            } catch (e) {
+              if (kDebugMode) print('[Main] Error creating AuthProvider: $e');
+              rethrow;
+            }
+          }),
+          ChangeNotifierProvider(create: (_) {
+            try {
+              return ThemeProvider();
+            } catch (e) {
+              if (kDebugMode) print('[Main] Error creating ThemeProvider: $e');
+              rethrow;
+            }
+          }),
+          ChangeNotifierProvider(create: (_) {
+            try {
+              return ChatProvider();
+            } catch (e) {
+              if (kDebugMode) print('[Main] Error creating ChatProvider: $e');
+              rethrow;
+            }
+          }),
+        ],
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'ChatUp',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeProvider.themeMode,
+              initialRoute: '/splash',
+              routes: {
+                '/splash': (_) => const SplashScreen(),
+                '/login-options': (_) => const LoginOptionsScreen(),
+                '/login-email': (_) => const EmailLoginScreen(),
+                '/register': (_) => const RegisterScreen(),
+                '/login-phone': (_) => const PhoneLoginScreen(),
+                '/verify': (_) => const OTPVerificationScreen(),
+                '/home': (_) => const ChatUpHome(),
+              },
+            );
+          },
+        ),
+      );
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('[Main] CRITICAL ERROR building app: $e');
+        print('[Main] StackTrace: $stackTrace');
+      }
+      // Fallback: Show error screen
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text('App initialization error'),
+                const SizedBox(height: 8),
+                if (kDebugMode) Text('$e'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
