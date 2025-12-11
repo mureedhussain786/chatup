@@ -12,7 +12,20 @@
           "package_name": "com.example.chatup"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "522675172773-8npcmt35dhqlco6eriqumhf1ptd2fkc6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chatup",
+            "certificate_hash": "77a4185f5c0dc6658bc8e0414a92c3c3dcf44771"
+          }
+        },
+        {
+          "client_id": "522675172773-a43qgevvteke4eh8iksq2a0nnh2cn351.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDx89cLrhRFCdQQNCvSoeSdr47e17G8U34"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "522675172773-a43qgevvteke4eh8iksq2a0nnh2cn351.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "522675172773-pg5pk6b0gd4ofj09kh9dhbuik6sj17c6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.chatupps"
+              }
+            }
+          ]
         }
       }
     }

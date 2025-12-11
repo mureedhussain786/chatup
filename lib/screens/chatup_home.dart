@@ -9,15 +9,15 @@ import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart'; // AuthProvider ko import karein
 import '../theme.dart';
 
-class WhatsAppHome extends StatefulWidget {
-  const WhatsAppHome({super.key});
+class ChatUpHome extends StatefulWidget {
+  const ChatUpHome({super.key});
 
   @override
-  State<WhatsAppHome> createState() => _WhatsAppHomeState();
+  State<ChatUpHome> createState() => _WhatsAppHomeState();
 }
 
 // WidgetsBindingObserver ko add karein taake app ka lifecycle (online/offline) detect kar sakein
-class _WhatsAppHomeState extends State<WhatsAppHome>
+class _WhatsAppHomeState extends State<ChatUpHome>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   bool _isSearching = false;
@@ -52,6 +52,7 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
 
   void _updateUserStatus(bool isOnline) {
     // AuthProvider ke zariye user ka status update karein
+    // 'listen: false' zaroori hai initState aur didChangeAppLifecycleState mein
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isAuthenticated) {
       authProvider.updateUserOnlineStatus(isOnline);
@@ -153,6 +154,7 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
         child: Container(
           color: isDarkMode ? Colors.black : Colors.white70,
           child: ListView(
+            padding: EdgeInsets.zero, // DrawerHeader se oopar space hatany k liye
             children: [
               // User ki profile information dikhane ke liye DrawerHeader
               DrawerHeader(
@@ -181,9 +183,9 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
                           fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
-                    // User ka Phone number
+                    // User ka Phone number ya Email
                     Text(
-                      authProvider.userProfile?.phone ?? '', // User ka phone number
+                      authProvider.userProfile?.phone ?? authProvider.userProfile?.email ?? '', // User ka phone/email
                       style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87, fontSize: 14),
                     ),
                   ],
@@ -214,6 +216,7 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
                   authProvider.signOut();
                   // Drawer ko band karein
                   Navigator.pop(context);
+                  // AuthGate khud hi login screen par bhej dega
                 },
               ),
             ],
@@ -258,3 +261,4 @@ class _WhatsAppHomeState extends State<WhatsAppHome>
     );
   }
 }
+

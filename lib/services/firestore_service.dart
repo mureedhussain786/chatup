@@ -21,7 +21,9 @@ class FirestoreService {
   /// Create or update user profile
   static Future<void> createUserProfile(UserModel userModel) async {
     try {
-      await _users.doc(userModel.uid).set(userModel.toMap(), SetOptions(merge: true));
+      await _users
+          .doc(userModel.uid)
+          .set(userModel.toMap(), SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) {
         print('Error creating user profile: $e');
@@ -63,7 +65,8 @@ class FirestoreService {
 
       if (name != null) updateData['name'] = name;
       if (email != null) updateData['email'] = email;
-      if (profileImageUrl != null) updateData['profileImageUrl'] = profileImageUrl;
+      if (profileImageUrl != null)
+        updateData['profileImageUrl'] = profileImageUrl;
       if (status != null) updateData['status'] = status;
       if (bio != null) updateData['bio'] = bio;
       if (location != null) updateData['location'] = location;
@@ -95,10 +98,8 @@ class FirestoreService {
   /// Search users by phone number
   static Future<List<UserModel>> searchUsersByPhone(String phone) async {
     try {
-      final querySnapshot = await _users
-          .where('phone', isEqualTo: phone)
-          .limit(10)
-          .get();
+      final querySnapshot =
+          await _users.where('phone', isEqualTo: phone).limit(10).get();
 
       return querySnapshot.docs
           .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
@@ -221,7 +222,11 @@ class FirestoreService {
   /// Mark message as read
   static Future<void> markMessageAsRead(String chatId, String messageId) async {
     try {
-      await _chats.doc(chatId).collection('messages').doc(messageId).update({'isRead': true});
+      await _chats
+          .doc(chatId)
+          .collection('messages')
+          .doc(messageId)
+          .update({'isRead': true});
     } catch (e) {
       if (kDebugMode) {
         print('Error marking message as read: $e');

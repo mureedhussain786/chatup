@@ -1,0 +1,9 @@
+[1mdiff --git a/lib/screens/login_options_screen.dart b/lib/screens/login_options_screen.dart[m
+[1mindex cdc601a..02e1aac 100644[m
+[1m--- a/lib/screens/login_options_screen.dart[m
+[1m+++ b/lib/screens/login_options_screen.dart[m
+[36m@@ -105,4 +105,3 @@[m [mclass LoginOptionsScreen extends StatelessWidget {[m
+     );[m
+   }[m
+ }[m
+[31m-[m

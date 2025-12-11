@@ -11,17 +11,23 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   
   ThemeProvider() {
-    _loadTheme();
+    // Load theme asynchronously without blocking
+    _loadTheme().catchError((e) {
+      debugPrint('Error loading theme: $e');
+    });
   }
   
   Future<void> _loadTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt(_themeKey) ?? 0;
-      _themeMode = ThemeMode.values[themeIndex];
-      notifyListeners();
+      if (themeIndex >= 0 && themeIndex < ThemeMode.values.length) {
+        _themeMode = ThemeMode.values[themeIndex];
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Error loading theme: $e');
+      // Keep default theme on error
     }
   }
   

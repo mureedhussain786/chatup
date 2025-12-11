@@ -195,7 +195,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isMe
               ? (isDarkMode ? const Color(0xFF005C4B) : const Color(0xFFD9FDD3))
@@ -203,18 +206,195 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              msg.text,
-              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-            ),
+            // Display image if message type is image
+            if (msg.type == MessageType.image &&
+                msg.filePath != null &&
+                msg.filePath!.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  // Show full screen image
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: InteractiveViewer(
+                              minScale: 0.5,
+                              maxScale: 4.0,
+                              child: Image.network(
+                                msg.filePath!,
+                                fit: BoxFit.contain,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(Icons.broken_image,
+                                        size: 100, color: Colors.white),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 40,
+                            right: 20,
+                            child: IconButton(
+                              icon: const Icon(Icons.close,
+                                  color: Colors.white, size: 30),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    msg.filePath!,
+                    width: double.infinity,
+                    height: 250,
+                    fit: BoxFit.cover,
+                    cacheWidth: (MediaQuery.of(context).size.width *
+                            0.75 *
+                            MediaQuery.of(context).devicePixelRatio)
+                        .round(),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 250,
+                        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      if (kDebugMode) {
+                        print('[ChatDetailScreen] Image load error: $error');
+                        print('[ChatDetailScreen] Image URL: ${msg.filePath}');
+                      }
+                      return Container(
+                        height: 250,
+                        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: isDarkMode
+                                  ? Colors.white54
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            // Display text if message has text or is not an image
+            if (msg.text.isNotEmpty || msg.type != MessageType.image)
+              Padding(
+                padding: EdgeInsets.only(
+                  top: msg.type == MessageType.image &&
+                          msg.filePath != null &&
+                          msg.filePath!.isNotEmpty
+                      ? 8
+                      : 0,
+                ),
+                child: Text(
+                  msg.text.isNotEmpty
+                      ? msg.text
+                      : (msg.type == MessageType.image ? '📷 Photo' : ''),
+                  style: TextStyle(
+                      color: isDarkMode ? Colors.white : Colors.black),
+                ),
+              ),
+            // Display file name for documents
+            if (msg.type == MessageType.document && msg.fileName != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.insert_drive_file,
+                      color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        msg.fileName!,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Display audio indicator
+            if (msg.type == MessageType.audio)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.audiotrack,
+                      color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Audio message',
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 4),
-            Text(
-              "${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}",
-              style: TextStyle(
-                fontSize: 10,
-                color: isDarkMode ? Colors.white70 : Colors.grey,
+            // Timestamp
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                "${msg.timestamp.hour}:${msg.timestamp.minute.toString().padLeft(2, '0')}",
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isDarkMode ? Colors.white70 : Colors.grey,
+                ),
               ),
             ),
           ],
@@ -411,8 +591,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     String? fileName,
   }) async {
     if (_chatId == null) {
-      if (kDebugMode)
+      if (kDebugMode) {
         print('[ChatDetailScreen] Cannot send media: _chatId is null');
+      }
       return;
     }
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
