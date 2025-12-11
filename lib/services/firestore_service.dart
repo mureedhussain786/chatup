@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/message.dart';
 import '../models/chat.dart';
 import '../models/user_model.dart';
-import '../models/contact_model.dart';
-import '../models/group_model.dart';
-import '../models/status_model.dart';
+
 
 /// Comprehensive Firestore service for real-time data management
 class FirestoreService {

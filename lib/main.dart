@@ -1,61 +1,56 @@
+import 'package:chatup/screens/chatup_home.dart';
+import 'package:chatup/screens/email_login_screen.dart';
+import 'package:chatup/screens/email_register_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Your local imports
-import 'firebase_options.dart';
-import 'theme.dart';
+// Import your providers and screens
+import 'firebase_options.dart'; // Auto-generated file
+import 'providers/auth_provider.dart' as local_auth; // Alias to avoid conflict with Firebase Auth
 import 'providers/theme_provider.dart';
-import 'providers/chat_provider.dart';
-import 'providers/auth_provider.dart' as auth_provider;
-import 'screens/splash_screen.dart';
-import 'screens/chatup_home.dart';
-import 'screens/phone_login_screen.dart';
-import 'screens/otp_verification_screen.dart';
+import 'theme.dart';
 
-/// ===============================
-/// ENTRY POINT
-/// ===============================
+// 1. IMPORT YOUR CHAT PROVIDER HERE (Check the file path)
+import 'providers/chat_provider.dart';
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const ChatUpApp());
+
+  runApp(const MyApp());
 }
 
-/// ===============================
-/// MAIN APP WIDGET
-/// ===============================
-class ChatUpApp extends StatelessWidget {
-  const ChatUpApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => auth_provider.AuthProvider()),
+
+        // 2. ADD THIS LINE HERE:
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'ChatUp',
             debugShowCheckedModeBanner: false,
+            title: 'ChatUp',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-
-            // AuthGate will check login state
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const AuthGate(),
-
-            // Define routes for navigation
             routes: {
-              '/login': (_) => const PhoneLoginScreen(),
-              '/verify': (_) => const OTPVerificationScreen(),
-              '/home': (_) => const WhatsAppHome(),
+              '/login_email': (context) => const EmailLoginScreen(),
+              '/register_email': (context) => const EmailRegisterScreen(),
+              '/home': (context) => const ChatUpHome(),
             },
           );
         },
@@ -64,9 +59,6 @@ class ChatUpApp extends StatelessWidget {
   }
 }
 
-/// ===============================
-/// AUTH GATE (Check User Status)
-/// ===============================
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -75,18 +67,15 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // 1️⃣ While Firebase checks the auth state, show splash
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen();
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
-
-        // 2️⃣ If user is logged in → Go to Home
         if (snapshot.hasData) {
-          return const WhatsAppHome();
+          return const ChatUpHome();
         }
-
-        // 3️⃣ If user not logged in → Show Login screen
-        return const PhoneLoginScreen();
+        return const EmailLoginScreen();
       },
     );
   }
